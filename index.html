@@ -232,7 +232,12 @@ let learnQueue=[], learnIdx=0, learnCorrect=0;
 function renderLearn(){return '<div class="card" style="text-align:center;padding:40px"><div style="font-size:2rem">📖</div><p>准备学习...</p></div>';}
 
 function initLearn(){
-  const unlearned=W.filter(w=>w.stage===0);
+  // Only learn words with valid zh (skip empty-meaning imports)
+  const unlearned=W.filter(w=>w.stage===0&&w.zh&&w.zh.trim());
+  if(unlearned.length===0&&W.filter(w=>w.stage===0).length>0){
+    document.getElementById('app').innerHTML='<div class="card"><div class="empty"><p style="font-size:3rem">\ud83d\udccb</p><p>所有未学单词都没有释义</p><p style="font-size:.8rem;color:var(--ts)">请先去词库为单词补充中文释义</p><button class="btn btn-o btn-sm" onclick="goto(\'wordlist\')" style="margin-top:12px">\ud83d\udccb \u53bb\u8bcd\u5e93</button></div></div>';
+    return;
+  }
   if(unlearned.length===0){
     document.getElementById('app').innerHTML='<div class="card"><div class="empty"><p style="font-size:3rem">🎉</p><p>所有单词都已学过！</p><p style="font-size:.8rem;color:var(--ts)">去导入新单词或复习旧词吧</p><button class="btn btn-p btn-sm" onclick="goto(\'import\')" style="margin-top:12px">📥 导入单词</button></div></div>';
     return;
@@ -284,7 +289,13 @@ function startQuiz(){
 function renderQuizQ(){
   if(learnIdx>=learnQueue.length){finishLearn();return}
   const correct=learnQueue[learnIdx];
-  const others=shuffle(W.filter(w=>w.en!==correct.en)).slice(0,3);
+  // Filter: only words with valid zh as options
+  const candidates=W.filter(w=>w.en!==correct.en&&w.zh&&w.zh.trim());
+  if(candidates.length<3){
+    document.getElementById('app').innerHTML='<div class="card" style="text-align:center"><p style="font-size:2rem">\u26a0\ufe0f</p><p>\u8bcd\u5e93\u4e2d\u91ca\u4e49\u5b8c\u6574\u7684\u8bcd\u4e0d\u8db34\u4e2a</p><p style="font-size:.8rem;color:var(--ts)">\u8bf7\u5148\u5bfc\u5165\u66f4\u591a\u5355\u8bcd\u6216\u4e3a\u5df2\u6709\u5355\u8bcd\u8865\u5145\u91ca\u4e49</p><button class="btn btn-o btn-sm" onclick="goto(\'wordlist\')" style="margin-top:12px">\ud83d\udccb \u53bb\u8bcd\u5e93\u8865\u5145\u91ca\u4e49</button></div>';
+    return;
+  }
+  const others=shuffle(candidates).slice(0,3);
   const opts=shuffle([...others,correct]);
   document.getElementById('app').innerHTML=`
     <div class="card">
