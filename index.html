@@ -9,6 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="单词助手">
 <meta name="description" content="考研英语单词学习 - 艾宾浩斯遗忘曲线复习">
 <link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<meta name="mobile-web-app-capable" content="yes">
 <title>📚 考研单词助手</title>
 <style>
 :root {
@@ -586,19 +589,40 @@ function clearAll(){
 }
 
 // ═══════════════ PWA ═══════════════
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isAndroid=/Android/.test(navigator.userAgent);
 let deferredPrompt;
+
 window.addEventListener('beforeinstallprompt',(e)=>{
   e.preventDefault(); deferredPrompt=e;
-  document.getElementById('installBanner').classList.add('show');
+  const b=document.getElementById('installBanner');
+  b.classList.add('show');
+  b.textContent=isAndroid?'📲 点此安装到手机桌面，离线也能用':'📲 点此安装为桌面应用，离线也能用';
 });
-function installPWA(){
-  if(!deferredPrompt)return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(r=>{
-    document.getElementById('installBanner').classList.remove('show');
-    toast(r.outcome==='accepted'?'✅ 安装成功！':'已取消安装');
-  });
+
+if(isIOS){
+  const b=document.getElementById('installBanner');
+  b.textContent='📱 iOS: 点浏览器「分享」→「添加到主屏幕」安装为APP';
+  b.classList.add('show');
 }
+
+function installPWA(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r=>{
+      document.getElementById('installBanner').classList.remove('show');
+      toast(r.outcome==='accepted'?'✅ 安装成功！':'已取消安装');
+      deferredPrompt=null;
+    });
+  }else if(isIOS){
+    toast('📱 请点击浏览器分享按钮 → 添加到主屏幕');
+  }
+}
+
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  toast('✅ 安装成功！');
+});
 
 // ═══════════════ INIT ═══════════════
 if('serviceWorker' in navigator){

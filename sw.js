@@ -1,5 +1,5 @@
-const CACHE='wordapp-v2';
-const ASSETS=['index.html','dict.js','manifest.json'];
+const CACHE='wordapp-v3';
+const ASSETS=['index.html','dict.js','manifest.json','icon-192.png','icon-512.png'];
 
 self.addEventListener('install',e=>{
   e.waitUntil(
