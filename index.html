@@ -483,6 +483,19 @@ function renderImport(){
     </div>`;
 }
 
+	function lookupDict(word){
+	  if(typeof DICT==='undefined')return null;
+	  const w=word.toLowerCase().trim();
+	  if(DICT[w])return DICT[w];
+	  const hyphenated=w.replace(/\s+/g,'-');
+	  if(DICT[hyphenated])return DICT[hyphenated];
+	  const spaced=w.replace(/-/g,' ');
+	  if(DICT[spaced])return DICT[spaced];
+	  const noApos=w.replace(/['']/g,'');
+	  if(DICT[noApos])return DICT[noApos];
+	  return null;
+	}
+	
 function previewImport(){
   const raw=document.getElementById('importInput').value.trim();
   if(!raw){toast('⚠️ 请粘贴单词列表');return}
@@ -490,7 +503,7 @@ function previewImport(){
   const preview=document.getElementById('importPreview');
   let found=0,notfound=0;
   preview.innerHTML=list.map(en=>{
-    const match=typeof DICT!=='undefined'?DICT[en.toLowerCase()]:null;
+    const match=lookupDict(en);
     if(match){found++;return `<div class="import-row"><span class="found">✓</span> <b>${en}</b> → ${match.zh} ${match.pos||''}</div>`}
     else{notfound++;return `<div class="import-row"><span class="notfound">!</span> <b>${en}</b> → <span style="color:var(--ts)">未匹配，将添加空释义</span></div>`}
   }).join('');
@@ -505,7 +518,7 @@ function doImport(){
   let added=0,skipped=0;
   list.forEach(en=>{
     if(W.find(w=>w.en.toLowerCase()===en.toLowerCase())){skipped++;return}
-    const match=typeof DICT!=='undefined'?DICT[en.toLowerCase()]:null;
+    const match=lookupDict(en);
     W.push({
       en:en,zh:match?match.zh:'',pos:match?match.pos||'':'',
       phonetic:match?match.p||'':'',ex:match?match.ex||'':'',
