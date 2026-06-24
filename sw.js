@@ -1,4 +1,4 @@
-const CACHE='wordapp-v1';
+const CACHE='wordapp-v2';
 const ASSETS=['index.html','dict.js','manifest.json'];
 
 self.addEventListener('install',e=>{
