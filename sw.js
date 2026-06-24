@@ -1,4 +1,4 @@
-const CACHE='wordapp-v4';
+const CACHE='wordapp-v5';
 const ASSETS=['index.html','dict.js','manifest.json','icon-192.png','icon-512.png','icon-192-maskable.png','icon-512-maskable.png'];
 
 self.addEventListener('install',e=>{
