@@ -611,7 +611,10 @@ function installPWA(){
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then(r=>{
       document.getElementById('installBanner').classList.remove('show');
-      toast(r.outcome==='accepted'?'✅ 安装成功！':'已取消安装');
+      if(r.outcome==='accepted'){
+        if(isAndroid) toast('✅ 已添加到桌面！请返回桌面或应用抽屉查看');
+        else toast('✅ 安装成功！');
+      }else{toast('已取消安装');}
       deferredPrompt=null;
     });
   }else if(isIOS){
@@ -621,7 +624,8 @@ function installPWA(){
 
 window.addEventListener('appinstalled',()=>{
   document.getElementById('installBanner').classList.remove('show');
-  toast('✅ 安装成功！');
+  if(isAndroid) toast('✅ 已安装！请在桌面或应用抽屉中查找「单词助手」');
+  else toast('✅ 安装成功！');
 });
 
 // ═══════════════ INIT ═══════════════
