@@ -486,13 +486,67 @@ function renderImport(){
 	function lookupDict(word){
 	  if(typeof DICT==='undefined')return null;
 	  const w=word.toLowerCase().trim();
+	  
+	  // 1. Exact match
 	  if(DICT[w])return DICT[w];
+	  
+	  // 2. Replace spaces/hyphens
 	  const hyphenated=w.replace(/\s+/g,'-');
 	  if(DICT[hyphenated])return DICT[hyphenated];
 	  const spaced=w.replace(/-/g,' ');
 	  if(DICT[spaced])return DICT[spaced];
 	  const noApos=w.replace(/['']/g,'');
 	  if(DICT[noApos])return DICT[noApos];
+	  
+	  // 3. Stemming: try removing suffixes to match root word
+	  const stems=[
+	    // suffix: [removal lengths to try]
+	    ['ly', 2],                                       // abundantly -> abundant
+	    ['ily', 3, 'y'],                                 // happily -> happy
+	    ['ment', 4],                                     // resentment -> resent
+	    ['ness', 4],                                     // darkness -> dark
+	    ['tion', 4, 'e'],                                // realization -> realize
+	    ['sion', 4],                                     // decision -> decide?
+	    ['ation', 5, 'e'],                               // realization -> realize
+	    ['ing', 3],                                      // adjoining -> adjoin
+	    ['ying', 4, 'ie'],                               // dying -> die
+	    ['ed', 2],                                       // excited -> excit -> excite
+	    ['ied', 3, 'y'],                                 // hurried -> hurry
+	    ['er', 2],                                       // faster -> fast
+	    ['est', 3],                                      // fastest -> fast
+	    ['able', 4],                                     // adjustable -> adjust
+	    ['ible', 4],                                     // possible -> poss? (edge case)
+	    ['ful', 3],                                      // hopeful -> hope
+	    ['less', 4],                                     // hopeless -> hope
+	    ['ous', 3],                                      // dangerous -> danger
+	    ['ive', 3],                                      // active -> act
+	    ['al', 2],                                       // natural -> nature
+	    ['ship', 4],                                     // friendship -> friend
+	    ['hood', 4],                                     // childhood -> child
+	    ['dom', 3],                                      // freedom -> free
+	    ['ity', 3],                                      // ability -> able? (irregular)
+	    ['ize', 3],                                      // realize -> real
+	    ['ise', 3],                                      // realise -> real
+	  ];
+	  
+	  for(const s of stems){
+	    const suffix=s[0];
+	    if(w.endsWith(suffix) && w.length > suffix.length + 2){
+	      // Try exact suffix removal
+	      let stem=w.slice(0, -suffix.length);
+	      // If there's a replacement ending, apply it
+	      if(s.length >= 3) stem += s[2];
+	      if(DICT[stem])return DICT[stem];
+	      // Try adding 'e' back
+	      if(!DICT[stem] && !stem.endsWith('e') && DICT[stem+'e'])return DICT[stem+'e'];
+	      // For -tion/-sion, also try +e without the a/i
+	      if((suffix==='tion'||suffix==='sion') && stem.length>1){
+	        const alt=stem.slice(0,-1)+'e';
+	        if(DICT[alt])return DICT[alt];
+	      }
+	    }
+	  }
+	  
 	  return null;
 	}
 	
