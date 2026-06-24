@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="单词助手">
+<meta name="description" content="考研英语单词学习 - 艾宾浩斯遗忘曲线复习">
+<link rel="manifest" href="manifest.json">
+<title>📚 考研单词助手</title>
+<style>
+:root {
+  --p: #4f46e5; --pl: #eef2ff; --s: #10b981; --d: #ef4444; --w: #f59e0b;
+  --t: #1e293b; --ts: #64748b; --b: #e2e8f0; --bg: #f1f5f9;
+  --card: #fff; --r: 16px; --rs: 10px; --sh: 0 2px 12px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--t);line-height:1.6;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+.header{background:rgba(255,255,255,.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--b);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px}
+.header .logo{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:6px}
+.header .badge{font-size:.75rem;color:var(--ts);background:var(--pl);padding:3px 10px;border-radius:99px;font-weight:600}
+.nav{display:flex;gap:2px;background:var(--card);padding:3px;margin:12px 12px 0;border-radius:var(--r);box-shadow:var(--sh);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav button{flex:1;min-width:52px;text-align:center;padding:9px 6px;border-radius:12px;font-size:.77rem;font-weight:600;border:none;background:transparent;color:var(--ts);cursor:pointer;white-space:nowrap;transition:.2s}
+.nav button:hover{background:var(--pl)}
+.nav button.active{background:var(--p);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3)}
+.page{display:none;padding:12px;max-width:540px;margin:0 auto}
+.page.show{display:block}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:18px;margin-bottom:12px;border:1px solid var(--b)}
+.card-hd{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--p);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.empty{text-align:center;padding:32px;color:var(--ts)}
+.btn{padding:10px 18px;border-radius:99px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:.2s;display:inline-flex;align-items:center;gap:5px;justify-content:center}
+.btn:active{transform:scale(.96)}
+.btn-p{background:var(--p);color:#fff}
+.btn-p:hover{filter:brightness(1.1)}
+.btn-o{background:transparent;border:2px solid var(--b);color:var(--t)}
+.btn-s{background:var(--s);color:#fff}
+.btn-d{background:transparent;border:2px solid var(--d);color:var(--d)}
+.btn-sm{padding:6px 14px;font-size:.78rem}
+.btn-lg{padding:14px 24px;font-size:1rem;width:100%}
+.inp{width:100%;padding:10px 14px;border-radius:99px;border:2px solid var(--b);font-size:.9rem;background:#f8fafc;font-family:inherit;transition:.2s}
+.inp:focus{outline:none;border-color:var(--p);background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+textarea.inp{border-radius:var(--rs);resize:vertical;min-height:80px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--t);color:#fff;padding:10px 22px;border-radius:99px;font-size:.82rem;font-weight:600;z-index:200;transition:transform .3s ease;pointer-events:none}
+.toast.on{transform:translateX(-50%) translateY(0)}
+/* ─── HOME ─── */
+.home-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.home-card{background:var(--card);border-radius:var(--r);padding:18px;box-shadow:var(--sh);cursor:pointer;border:2px solid transparent;transition:.2s;text-align:center}
+.home-card:hover{border-color:var(--p);transform:translateY(-2px)}
+.home-card .icon{font-size:2rem;margin-bottom:6px}
+.home-card .title{font-weight:700;font-size:.95rem;margin-bottom:2px}
+.home-card .sub{font-size:.73rem;color:var(--ts)}
+.home-card.learn{border-left:4px solid var(--p)}
+.home-card.review{border-left:4px solid var(--s)}
+.stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-item{background:var(--card);border-radius:var(--rs);padding:12px 8px;text-align:center;box-shadow:var(--sh)}
+.stat-item .num{font-size:1.5rem;font-weight:800;color:var(--p)}
+.stat-item .lbl{font-size:.7rem;color:var(--ts)}
+/* ─── FLASHCARD ─── */
+.fc-scene{perspective:800px;margin:12px 0}
+.fc{width:100%;height:240px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform .5s}
+.fc.flipped{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:var(--r);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;border:2px solid var(--b);background:var(--card);text-align:center}
+.fc-back{transform:rotateY(180deg);background:linear-gradient(135deg,#eef2ff,#faf5ff)}
+.fc .word{font-size:1.8rem;font-weight:800;letter-spacing:-.01em}
+.fc .phonetic{font-size:.85rem;color:var(--ts);margin:4px 0}
+.fc .hint{font-size:.75rem;color:var(--ts);opacity:.7;margin-top:12px}
+.fc .meaning{font-size:1.2rem;font-weight:700;color:var(--p)}
+.fc .pos{font-size:.8rem;color:var(--ts);margin-bottom:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.progress{height:5px;border-radius:3px;background:var(--b);margin:10px 0;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--p);transition:width .3s}
+/* ─── QUIZ / REVIEW ─── */
+.quiz-word{font-size:1.5rem;font-weight:800;text-align:center;padding:12px 0}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{padding:12px 16px;border-radius:var(--rs);border:2px solid var(--b);font-size:.9rem;cursor:pointer;transition:.2s;background:var(--card);text-align:left;font-weight:500}
+.opt:hover{border-color:var(--p);background:var(--pl)}
+.opt.correct{border-color:var(--s);background:#d1fae5;color:#065f46}
+.opt.wrong{border-color:var(--d);background:#fee2e2;color:#991b1b}
+.opt:disabled{pointer-events:none}
+.review-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px}
+.review-btns .btn{font-size:.82rem}
+/* ─── WORDLIST ─── */
+.wl-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--b);gap:8px}
+.wl-item:last-child{border-bottom:none}
+.wl-item .eng{font-weight:700}
+.wl-item .chn{font-size:.82rem;color:var(--ts)}
+.wl-item .del{background:none;border:none;color:var(--ts);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:1rem;opacity:.4}
+.wl-item:hover .del{opacity:1}
+.wl-item .del:hover{color:var(--d);background:#fef2f2}
+.search-bar{margin-bottom:10px}
+/* ─── IMPORT ─── */
+.import-preview{max-height:300px;overflow-y:auto;margin:8px 0}
+.import-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--b);font-size:.85rem}
+.import-row .found{color:var(--s);font-size:.7rem}
+.import-row .notfound{color:var(--w);font-size:.7rem}
+/* ─── SETTINGS ─── */
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--b);gap:8px}
+.setting-row .label{font-weight:600}
+.setting-row .desc{font-size:.75rem;color:var(--ts)}
+.setting-row select{padding:8px 12px;border-radius:99px;border:2px solid var(--b);font-size:.85rem;background:var(--card)}
+/* ─── INSTALL BANNER ─── */
+.install-banner{display:none;background:var(--p);color:#fff;padding:10px 16px;margin:8px 12px;border-radius:var(--rs);text-align:center;font-weight:600;font-size:.85rem;cursor:pointer}
+.install-banner.show{display:block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.install-banner{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">📚 考研单词助手</div>
+  <div class="badge" id="hdBadge">📖 0词</div>
+</header>
+
+<div class="install-banner" id="installBanner" onclick="installPWA()">📲 点击安装到手机桌面，离线也能用</div>
+
+<nav class="nav" id="nav">
+  <button class="active" data-p="home">🏠 首页</button>
+  <button data-p="learn">📖 学习</button>
+  <button data-p="review">🔄 复习</button>
+  <button data-p="wordlist">📋 词库</button>
+  <button data-p="import">📥 导入</button>
+  <button data-p="settings">⚙️ 设置</button>
+</nav>
+
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="dict.js"></script>
+<script>
+// ═══════════════ STORAGE ═══════════════
+const K_W='wordapp_words', K_S='wordapp_settings';
+const DEF_SET={learnBatch:20,reviewBatch:50};
+const EB_INTERVALS=[1,2,4,7,15,30]; // days after learning, 6 stages → mastered
+
+let W=[], S={};
+
+function load(){
+  try{W=JSON.parse(localStorage[K_W]||'[]')}catch(e){W=[]}
+  try{S=Object.assign(DEF_SET,JSON.parse(localStorage[K_S]||'{}'))}catch(e){S={...DEF_SET}}
+  // migrate old data
+  W.forEach(w=>{
+    if(w.stage===undefined){w.stage=0;w.nextReview=null;w.reviewHistory=[]}
+    if(!w.source) w.source='manual';
+    if(!w.pos) w.pos='';
+  });
+}
+function saveW(){localStorage[K_W]=JSON.stringify(W);updateBadge()}
+function saveS(){localStorage[K_S]=JSON.stringify(S)}
+
+// ═══════════════ NAVIGATION ═══════════════
+let cp='home';
+document.getElementById('nav').addEventListener('click',e=>{
+  const b=e.target.closest('button');
+  if(!b)return;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  goto(b.dataset.p);
+});
+function goto(p){
+  cp=p; render();
+  if(p==='wordlist') renderWordList();
+}
+
+// ═══════════════ TOAST ═══════════════
+let tt;
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('on');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),1800);
+}
+
+// ═══════════════ BADGE ═══════════════
+function updateBadge(){
+  document.getElementById('hdBadge').textContent=`📖 ${W.length}词`;
+  const due=W.filter(w=>w.stage>0&&w.stage<=6&&w.nextReview&&w.nextReview<=Date.now()).length;
+  if(due>0) document.getElementById('hdBadge').textContent+=` 🔔${due}`;
+}
+
+// ═══════════════ RENDER ═══════════════
+function render(){
+  const a=document.getElementById('app');
+  switch(cp){
+    case 'home': a.innerHTML=renderHome(); break;
+    case 'learn': a.innerHTML=renderLearn(); initLearn(); break;
+    case 'review': a.innerHTML=renderReview(); initReview(); break;
+    case 'wordlist': a.innerHTML='<div class="search-bar card"><input class="inp" id="wlSearch" placeholder="🔍 搜索单词..." oninput="renderWordList()"></div><div class="card"><div class="card-hd">📋 全部单词</div><div id="wlList"></div></div>'; renderWordList(); break;
+    case 'import': a.innerHTML=renderImport(); break;
+    case 'settings': a.innerHTML=renderSettings(); break;
+  }
+}
+
+// ═══════════════ HOME ═══════════════
+function renderHome(){
+  const total=W.length;
+  const unlearned=W.filter(w=>w.stage===0).length;
+  const due=W.filter(w=>w.stage>0&&w.stage<=6&&w.nextReview&&w.nextReview<=Date.now()).length;
+  const mastered=W.filter(w=>w.stage>=7).length;
+  return `
+    <div class="stats-row" style="margin-top:0">
+      <div class="stat-item"><div class="num">${unlearned}</div><div class="lbl">待学习</div></div>
+      <div class="stat-item"><div class="num" style="color:var(--d)">${due}</div><div class="lbl">待复习</div></div>
+      <div class="stat-item"><div class="num" style="color:var(--s)">${mastered}</div><div class="lbl">已掌握</div></div>
+    </div>
+    <div class="home-cards">
+      <div class="home-card learn" onclick="goto('learn')">
+        <div class="icon">📖</div>
+        <div class="title">学习新词</div>
+        <div class="sub">每轮 ${S.learnBatch} 词</div>
+      </div>
+      <div class="home-card review" onclick="goto('review')">
+        <div class="icon">🔄</div>
+        <div class="title">复习旧词</div>
+        <div class="sub">${due} 个到期</div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="card-hd">📊 学习进度</div>
+      <div class="progress"><div class="progress-fill" style="width:${total?Math.round(mastered/total*100):0}%"></div></div>
+      <div style="font-size:.78rem;color:var(--ts);text-align:center">掌握率 ${total?Math.round(mastered/total*100):0}%（${mastered}/${total}）</div>
+    </div>`;
+}
+
+// ═══════════════ LEARN MODE ═══════════════
+let learnQueue=[], learnIdx=0, learnCorrect=0;
+
+function initLearn(){
+  const unlearned=W.filter(w=>w.stage===0);
+  if(unlearned.length===0){
+    document.getElementById('app').innerHTML='<div class="card"><div class="empty"><p style="font-size:3rem">🎉</p><p>所有单词都已学过！</p><p style="font-size:.8rem;color:var(--ts)">去导入新单词或复习旧词吧</p><button class="btn btn-p btn-sm" onclick="goto(\'import\')" style="margin-top:12px">📥 导入单词</button></div></div>';
+    return;
+  }
+  learnQueue=shuffle(unlearned).slice(0,S.learnBatch);
+  learnIdx=0; learnCorrect=0;
+  renderFlashcard();
+}
+
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+function renderFlashcard(){
+  if(learnIdx>=learnQueue.length){finishLearn();return}
+  const w=learnQueue[learnIdx];
+  document.getElementById('app').innerHTML=`
+    <div class="card">
+      <div class="card-hd">📖 学习 · ${learnIdx+1}/${learnQueue.length}</div>
+      <div class="fc-scene"><div class="fc" id="fc" onclick="this.classList.toggle('flipped')">
+        <div class="fc-face fc-front">
+          <div class="word">${w.en}</div>
+          ${w.phonetic?`<div class="phonetic">${w.phonetic}</div>`:''}
+          <div class="hint">👆 点击翻转查看释义</div>
+        </div>
+        <div class="fc-face fc-back">
+          ${w.pos?`<div class="pos">${w.pos}</div>`:''}
+          <div class="meaning">${w.zh}</div>
+          ${w.ex?`<div style="font-size:.85rem;color:var(--ts);margin-top:8px">${w.ex}</div>`:''}
+          <div class="hint">👆 点击返回</div>
+        </div>
+      </div></div>
+      <div class="progress"><div class="progress-fill" style="width:${(learnIdx/learnQueue.length)*100}%"></div></div>
+      <div class="actions">
+        <button class="btn btn-o btn-sm" onclick="prevLearn()">⬅ 上一个</button>
+        <button class="btn btn-p btn-sm" onclick="nextLearn()">下一个 ➡</button>
+        <button class="btn btn-s btn-sm" onclick="startQuiz()">🎯 开始测验</button>
+      </div>
+    </div>`;
+}
+
+function prevLearn(){if(learnIdx>0){learnIdx--;renderFlashcard()}}
+function nextLearn(){if(learnIdx<learnQueue.length-1){learnIdx++;renderFlashcard()}}
+
+function startQuiz(){
+  if(learnQueue.length<4){toast('⚠️ 至少需要4个词才能测验');return}
+  learnIdx=0; learnCorrect=0;
+  renderQuizQ();
+}
+
+function renderQuizQ(){
+  if(learnIdx>=learnQueue.length){finishLearn();return}
+  const correct=learnQueue[learnIdx];
+  const others=shuffle(W.filter(w=>w.en!==correct.en)).slice(0,3);
+  const opts=shuffle([...others,correct]);
+  document.getElementById('app').innerHTML=`
+    <div class="card">
+      <div class="card-hd">🎯 测验 · ${learnIdx+1}/${learnQueue.length} · ✅${learnCorrect}</div>
+      <div class="quiz-word">${correct.en} ${correct.phonetic||''}</div>
+      <div style="text-align:center;font-size:.8rem;color:var(--ts);margin-bottom:12px">选择正确的中文释义</div>
+      <div class="opts" id="qzOpts">
+        ${opts.map((o,i)=>`<button class="opt" data-c="${o.en===correct.en}" data-i="${i}" onclick="answerQuiz(this)">${o.zh}</button>`).join('')}
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:${(learnIdx/learnQueue.length)*100}%"></div></div>
+    </div>`;
+}
+
+function answerQuiz(btn){
+  const correct=btn.dataset.c==='true';
+  const all=document.querySelectorAll('#qzOpts .opt');
+  all.forEach(b=>{b.disabled=true;if(b.dataset.c==='true')b.classList.add('correct');});
+  if(!correct) btn.classList.add('wrong');
+  if(correct) learnCorrect++;
+  setTimeout(()=>{learnIdx++;renderQuizQ();},700);
+}
+
+function finishLearn(){
+  const ww=learnQueue;
+  ww.forEach(w=>{
+    const wi=W.find(x=>x.en===w.en);
+    if(wi){wi.stage=1;wi.nextReview=Date.now()+EB_INTERVALS[0]*86400000;wi.reviewHistory=wi.reviewHistory||[];wi.reviewHistory.push({date:Date.now(),result:'learned'});}
+  });
+  saveW();
+  const pct=learnQueue.length>=4?Math.round(learnCorrect/learnQueue.length*100):0;
+  document.getElementById('app').innerHTML=`
+    <div class="card" style="text-align:center">
+      <div style="font-size:3rem">${pct>=80?'🌟':pct>=50?'👍':'💪'}</div>
+      <div style="font-size:1.5rem;font-weight:800;margin:8px 0">${pct>=80?'太棒了！':pct>=50?'继续加油！':'多多练习！'}</div>
+      ${learnQueue.length>=4?`<p>测验正确率 <b style="color:var(--p)">${pct}%</b>（${learnCorrect}/${learnQueue.length}）</p>`:`<p>已学习 ${learnQueue.length} 个单词</p>`}
+      <p style="font-size:.8rem;color:var(--ts);margin-top:4px">首次复习：${new Date(Date.now()+86400000).toLocaleDateString('zh-CN')}</p>
+      <div class="actions" style="margin-top:16px">
+        <button class="btn btn-p btn-sm" onclick="goto('learn')">🔄 继续学习</button>
+        <button class="btn btn-o btn-sm" onclick="goto('home')">🏠 回首页</button>
+      </div>
+    </div>`;
+}
+
+// ═══════════════ REVIEW MODE ═══════════════
+let reviewQueue=[], reviewIdx=0, reviewResults=[];
+
+function initReview(){
+  const now=Date.now();
+  reviewQueue=W.filter(w=>w.stage>0&&w.stage<=6&&w.nextReview&&w.nextReview<=now)
+    .sort((a,b)=>a.nextReview-b.nextReview)
+    .slice(0,S.reviewBatch);
+  if(reviewQueue.length===0){
+    document.getElementById('app').innerHTML=`
+      <div class="card"><div class="empty"><p style="font-size:3rem">✅</p><p>没有需要复习的单词</p><p style="font-size:.8rem;color:var(--ts)">下一个复习日会有新单词到期</p>
+      <button class="btn btn-o btn-sm" onclick="goto('home')" style="margin-top:12px">🏠 回首页</button></div></div>`;
+    return;
+  }
+  reviewIdx=0; reviewResults=[];
+  renderReviewCard();
+}
+
+function renderReviewCard(){
+  if(reviewIdx>=reviewQueue.length){
+    finishReview(); return;
+  }
+  const w=reviewQueue[reviewIdx];
+  document.getElementById('app').innerHTML=`
+    <div class="card">
+      <div class="card-hd">🔄 复习 · ${reviewIdx+1}/${reviewQueue.length}</div>
+      <div class="fc-scene"><div class="fc" id="fc" onclick="this.classList.toggle('flipped')">
+        <div class="fc-face fc-front">
+          <div class="word">${w.en}</div>
+          ${w.phonetic?`<div class="phonetic">${w.phonetic}</div>`:''}
+          <div class="hint">👆 回忆后点击查看</div>
+        </div>
+        <div class="fc-face fc-back">
+          ${w.pos?`<div class="pos">${w.pos}</div>`:''}
+          <div class="meaning">${w.zh}</div>
+          ${w.ex?`<div style="font-size:.85rem;color:var(--ts);margin-top:8px">${w.ex}</div>`:''}
+          <div style="font-size:.75rem;color:var(--ts);margin-top:8px">📅 ${new Date(w.nextReview).toLocaleDateString('zh-CN')} 到期</div>
+        </div>
+      </div></div>
+      <div style="text-align:center;font-size:.82rem;color:var(--ts);margin:8px 0">你能想起来吗？</div>
+      <div class="review-btns">
+        <button class="btn" style="background:#fee2e2;color:#991b1b" onclick="rateReview('forgot')">😰 忘记了</button>
+        <button class="btn" style="background:#fef3c7;color:#92400e" onclick="rateReview('fuzzy')">🤔 模糊</button>
+        <button class="btn" style="background:#d1fae5;color:#065f46" onclick="rateReview('good')">😊 记得</button>
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:${(reviewIdx/reviewQueue.length)*100}%"></div></div>
+    </div>`;
+}
+
+function rateReview(result){
+  const wi=W.find(x=>x.en===reviewQueue[reviewIdx].en);
+  if(!wi) return;
+  const stage=wi.stage;
+  if(result==='good'){
+    const ns=Math.min(stage+1,7);
+    wi.stage=ns;
+    if(ns>=7){wi.nextReview=null}
+    else{wi.nextReview=Date.now()+EB_INTERVALS[ns-1]*86400000}
+  }else if(result==='fuzzy'){
+    wi.nextReview=Date.now()+EB_INTERVALS[stage-1]*86400000;
+  }else{
+    const ns=Math.max(1,stage-2);
+    wi.stage=ns;
+    wi.nextReview=Date.now()+EB_INTERVALS[ns-1]*86400000;
+  }
+  wi.reviewHistory=wi.reviewHistory||[];
+  wi.reviewHistory.push({date:Date.now(),result});
+  reviewResults.push({en:wi.en,result});
+  reviewIdx++;
+  saveW();
+  renderReviewCard();
+}
+
+function finishReview(){
+  const good=reviewResults.filter(r=>r.result==='good').length;
+  const fuzzy=reviewResults.filter(r=>r.result==='fuzzy').length;
+  const forgot=reviewResults.filter(r=>r.result==='forgot').length;
+  document.getElementById('app').innerHTML=`
+    <div class="card" style="text-align:center">
+      <div style="font-size:3rem">✅</div>
+      <div style="font-size:1.2rem;font-weight:800;margin:8px 0">复习完成！</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin:12px 0">
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#065f46">${good}</div><div style="font-size:.7rem;color:var(--ts)">记得</div></div>
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#92400e">${fuzzy}</div><div style="font-size:.7rem;color:var(--ts)">模糊</div></div>
+        <div style="text-align:center"><div style="font-size:1.3rem;font-weight:800;color:#991b1b">${forgot}</div><div style="font-size:.7rem;color:var(--ts)">忘记</div></div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn btn-p btn-sm" onclick="goto('review')">🔄 继续复习</button>
+        <button class="btn btn-o btn-sm" onclick="goto('home')">🏠 回首页</button>
+      </div>
+    </div>`;
+}
+
+// ═══════════════ WORD LIST ═══════════════
+function renderWordList(){
+  const q=(document.getElementById('wlSearch')?.value||'').toLowerCase();
+  const filtered=W.filter(w=>!q||w.en.toLowerCase().includes(q)||w.zh.includes(q));
+  const container=document.getElementById('wlList');
+  if(!container)return;
+  if(filtered.length===0){
+    container.innerHTML='<div class="empty">'+(q?'未找到匹配单词':'词库为空，去导入吧')+'</div>';
+    return;
+  }
+  container.innerHTML=filtered.map((w,i)=>{
+    const origIdx=W.indexOf(w);
+    const stageLabel=w.stage===0?'🆕':w.stage>=7?'✅':`🔄L${w.stage}`;
+    const dueInfo=w.nextReview&&w.stage<7?`<span style="font-size:.65rem;color:${w.nextReview<=Date.now()?'var(--d)':'var(--ts)'}">${w.nextReview<=Date.now()?'⚠到期':'📅'+new Date(w.nextReview).toLocaleDateString('zh-CN')}</span>`:'';
+    return `<div class="wl-item">
+      <div style="flex:1;min-width:0">
+        <div class="eng">${stageLabel} ${w.en} ${w.phonetic?`<span style="font-size:.7rem;color:var(--ts);font-weight:400">${w.phonetic}</span>`:''}</div>
+        <div class="chn">${w.pos?`<span style="font-size:.7rem;color:var(--p);font-weight:600">${w.pos}</span> `:''}${w.zh} ${dueInfo}</div>
+      </div>
+      <button class="del" onclick="delWord(${origIdx})" title="删除">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function delWord(i){
+  const w=W[i];
+  if(!confirm(`删除「${w.en}」？`))return;
+  W.splice(i,1); saveW(); renderWordList(); goto('wordlist'); toast(`已删除「${w.en}」`);
+}
+
+// ═══════════════ IMPORT ═══════════════
+function renderImport(){
+  // Update dict count after DOM is ready
+  setTimeout(()=>{
+    const dc=document.getElementById('dictCount');
+    if(dc&&typeof DICT!=='undefined')dc.textContent=Object.keys(DICT).length;
+  },100);
+  return `
+    <div class="card">
+      <div class="card-hd">📥 批量导入单词</div>
+      <p style="font-size:.78rem;color:var(--ts);margin-bottom:8px">每行一个英文单词，系统自动匹配红宝书词库补全释义</p>
+      <textarea class="inp" id="importInput" placeholder="abandon&#10;brilliant&#10;curious&#10;demonstrate&#10;..."></textarea>
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <button class="btn btn-p btn-sm" onclick="previewImport()">🔍 预览匹配</button>
+        <span style="font-size:.75rem;color:var(--ts)">词库已收录 <b id="dictCount">-</b> 词</span>
+      </div>
+      <div class="import-preview" id="importPreview"></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">➕ 单个添加</div>
+      <div style="display:grid;gap:6px">
+        <input class="inp" id="addEn" placeholder="英文单词">
+        <input class="inp" id="addZh" placeholder="中文释义">
+        <input class="inp" id="addPos" placeholder="词性 (n./v./adj./adv.)">
+        <input class="inp" id="addPhonetic" placeholder="音标（可选）">
+        <button class="btn btn-p btn-sm" onclick="addSingle()">添加</button>
+      </div>
+    </div>`;
+}
+
+function previewImport(){
+  const raw=document.getElementById('importInput').value.trim();
+  if(!raw){toast('⚠️ 请粘贴单词列表');return}
+  const list=[...new Set(raw.split(/[\n,;，；]+/).map(s=>s.trim()).filter(Boolean))];
+  const preview=document.getElementById('importPreview');
+  let found=0,notfound=0;
+  preview.innerHTML=list.map(en=>{
+    const match=typeof DICT!=='undefined'?DICT[en.toLowerCase()]:null;
+    if(match){found++;return `<div class="import-row"><span class="found">✓</span> <b>${en}</b> → ${match.zh} ${match.pos||''}</div>`}
+    else{notfound++;return `<div class="import-row"><span class="notfound">!</span> <b>${en}</b> → <span style="color:var(--ts)">未匹配，将添加空释义</span></div>`}
+  }).join('');
+  preview.innerHTML+=`<div style="margin-top:8px;font-weight:600;font-size:.85rem">匹配 <span style="color:var(--s)">${found}</span> 词，<span style="color:var(--w)">${notfound}</span> 词需手动补充</div>`;
+  preview.innerHTML+=`<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="doImport()">✅ 确认导入 (${list.length} 词)</button>`;
+}
+
+function doImport(){
+  const raw=document.getElementById('importInput').value.trim();
+  const list=[...new Set(raw.split(/[\n,;，；]+/).map(s=>s.trim()).filter(Boolean))];
+  if(list.length===0)return;
+  let added=0,skipped=0;
+  list.forEach(en=>{
+    if(W.find(w=>w.en.toLowerCase()===en.toLowerCase())){skipped++;return}
+    const match=typeof DICT!=='undefined'?DICT[en.toLowerCase()]:null;
+    W.push({
+      en:en,zh:match?match.zh:'',pos:match?match.pos||'':'',
+      phonetic:match?match.p||'':'',ex:match?match.ex||'':'',
+      stage:0,nextReview:null,reviewHistory:[],source:'import'
+    });
+    added++;
+  });
+  saveW();
+  document.getElementById('importInput').value='';
+  document.getElementById('importPreview').innerHTML='';
+  toast(`✅ 导入 ${added} 词${skipped>0?`，跳过 ${skipped} 重复`:''}`);
+  updateBadge();
+}
+
+function addSingle(){
+  const en=document.getElementById('addEn').value.trim();
+  const zh=document.getElementById('addZh').value.trim();
+  const pos=document.getElementById('addPos').value.trim();
+  const phonetic=document.getElementById('addPhonetic').value.trim();
+  if(!en||!zh){toast('⚠️ 请填写英文和中文');return}
+  W.push({en,zh,pos,phonetic,ex:'',stage:0,nextReview:null,reviewHistory:[],source:'manual'});
+  saveW();
+  document.getElementById('addEn').value='';document.getElementById('addZh').value='';
+  document.getElementById('addPos').value='';document.getElementById('addPhonetic').value='';
+  toast(`✅ 已添加「${en}」`);
+  updateBadge();
+}
+
+// ═══════════════ SETTINGS ═══════════════
+function renderSettings(){
+  const total=W.length,unlearned=W.filter(w=>w.stage===0).length;
+  const mastered=W.filter(w=>w.stage>=7).length;
+  const learning=total-unlearned-mastered;
+  setTimeout(()=>{
+    document.getElementById('setLearnBatch').value=S.learnBatch;
+    document.getElementById('setReviewBatch').value=S.reviewBatch;
+  },50);
+  return `
+    <div class="card">
+      <div class="card-hd">⚙️ 学习设置</div>
+      <div class="setting-row"><div><div class="label">每轮学习数</div><div class="desc">每次学习新单词的数量</div></div>
+        <select id="setLearnBatch" onchange="S.learnBatch=+this.value;saveS();toast('已保存')">
+          <option value="10">10</option><option value="20">20</option><option value="30">30</option><option value="50">50</option>
+        </select>
+      </div>
+      <div class="setting-row"><div><div class="label">每轮复习数</div><div class="desc">每次复习到期单词的数量</div></div>
+        <select id="setReviewBatch" onchange="S.reviewBatch=+this.value;saveS();toast('已保存')">
+          <option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="200">全部</option>
+        </select>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">📊 学习统计</div>
+      <div class="setting-row"><div class="label">总词汇量</div><div>${total}</div></div>
+      <div class="setting-row"><div class="label">未学习</div><div>${unlearned}</div></div>
+      <div class="setting-row"><div class="label">学习中（复习阶段）</div><div>${learning}</div></div>
+      <div class="setting-row"><div class="label">已掌握</div><div style="color:var(--s);font-weight:700">${mastered}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">🗑 数据管理</div>
+      <div class="setting-row">
+        <div><div class="label">重置所有进度</div><div class="desc">保留单词，清除学习记录</div></div>
+        <button class="btn btn-d btn-sm" onclick="resetProgress()">重置</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="label">清空全部数据</div><div class="desc">删除所有单词和记录</div></div>
+        <button class="btn btn-d btn-sm" onclick="clearAll()">清空</button>
+      </div>
+    </div>`;
+}
+
+function resetProgress(){
+  if(!confirm('确认重置所有学习进度？单词保留，艾宾浩斯记录清零。'))return;
+  W.forEach(w=>{w.stage=0;w.nextReview=null;w.reviewHistory=[]});
+  saveW(); toast('✅ 进度已重置'); goto('settings');
+}
+
+function clearAll(){
+  if(!confirm('⚠️ 确认删除所有单词和记录？此操作不可撤销！'))return;
+  W=[]; saveW(); toast('🗑 已清空全部数据'); goto('home');
+}
+
+// ═══════════════ PWA ═══════════════
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault(); deferredPrompt=e;
+  document.getElementById('installBanner').classList.add('show');
+});
+function installPWA(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(r=>{
+    document.getElementById('installBanner').classList.remove('show');
+    toast(r.outcome==='accepted'?'✅ 安装成功！':'已取消安装');
+  });
+}
+
+// ═══════════════ INIT ═══════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+load(); updateBadge(); goto('home');
+</script>
+</body>
+</html>
