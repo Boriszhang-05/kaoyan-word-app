@@ -226,6 +226,8 @@ function renderHome(){
 // ═══════════════ LEARN MODE ═══════════════
 let learnQueue=[], learnIdx=0, learnCorrect=0;
 
+function renderLearn(){return '<div class="card" style="text-align:center;padding:40px"><div style="font-size:2rem">📖</div><p>准备学习...</p></div>';}
+
 function initLearn(){
   const unlearned=W.filter(w=>w.stage===0);
   if(unlearned.length===0){
@@ -325,6 +327,8 @@ function finishLearn(){
 
 // ═══════════════ REVIEW MODE ═══════════════
 let reviewQueue=[], reviewIdx=0, reviewResults=[];
+
+function renderReview(){return '<div class="card" style="text-align:center;padding:40px"><div style="font-size:2rem">🔄</div><p>准备复习...</p></div>';}
 
 function initReview(){
   const now=Date.now();
