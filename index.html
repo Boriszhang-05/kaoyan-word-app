@@ -510,16 +510,28 @@ function renderImport(){
 function parseImportLines(raw){
   const seen=new Set();
   const items=[];
+  const hasChinese=/[\u4e00-\u9fff]/;
   raw.split(/[\r\n]+/).forEach(line=>{
     const trimmed=line.trim();
     if(!trimmed)return;
-    const m=trimmed.match(/^(\S+)\s*(.*)$/);
-    const word=m[1];
-    const meaning=m[2].trim();
+    const tokens=trimmed.split(/\s+/);
+    // Find boundary: first Chinese token marks start of meaning
+    let chIdx=tokens.findIndex(t=>hasChinese.test(t));
+    if(chIdx===-1)chIdx=tokens.length;
+    const enTokens=tokens.slice(0,chIdx);
+    const userMeaning=tokens.slice(chIdx).join(' ').trim();
+    if(enTokens.length===0)return;
+    // Only accept dict match if it consumes ALL English tokens;
+    // otherwise treat as a phrase with user-provided meaning
+    let word=null,dictMatch=null;
+    const fullPhrase=enTokens.join(' ');
+    const fullMatch=lookupDict(fullPhrase);
+    if(fullMatch){word=fullPhrase;dictMatch=fullMatch;}
+    else{word=fullPhrase;}
     const key=word.toLowerCase();
     if(seen.has(key))return;
     seen.add(key);
-    items.push({word,meaning});
+    items.push({word,meaning:userMeaning,dictMatch});
   });
   return items;
 }
@@ -531,8 +543,7 @@ function previewImport(){
   const preview=document.getElementById('importPreview');
   let found=0,usedCustom=0,empty=0;
   preview.innerHTML=items.map(it=>{
-    const match=lookupDict(it.word);
-    if(match){found++;return `<div class="import-row"><span class="found">✓</span> <b>${it.word}</b> → ${match.zh} ${match.pos||''}</div>`}
+    if(it.dictMatch){found++;return `<div class="import-row"><span class="found">✓</span> <b>${it.word}</b> → ${it.dictMatch.zh} ${it.dictMatch.pos||''}</div>`}
     else if(it.meaning){usedCustom++;return `<div class="import-row"><span style="color:#f59e0b">●</span> <b>${it.word}</b> → <span style="color:var(--s)">${it.meaning}</span> <span style="font-size:.65rem;color:var(--ts)">自定义</span></div>`}
     else{empty++;return `<div class="import-row"><span class="notfound">!</span> <b>${it.word}</b> → <span style="color:var(--ts)">未匹配，无释义</span></div>`}
   }).join('');
@@ -551,7 +562,7 @@ function doImport(){
   let added=0,skipped=0;
   items.forEach(it=>{
     if(W.find(w=>w.en.toLowerCase()===it.word.toLowerCase())){skipped++;return}
-    const match=lookupDict(it.word);
+    const match=it.dictMatch||lookupDict(it.word);
     W.push({
       en:it.word,zh:match?match.zh:(it.meaning||''),pos:match?match.pos||'':'',
       phonetic:match?match.p||'':'',ex:match?match.ex||'':'',
