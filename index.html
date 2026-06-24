@@ -474,7 +474,7 @@ function renderImport(){
   return `
     <div class="card">
       <div class="card-hd">📥 批量导入单词</div>
-      <p style="font-size:.78rem;color:var(--ts);margin-bottom:8px">每行一个英文单词，系统自动匹配红宝书词库补全释义</p>
+      <p style="font-size:.78rem;color:var(--ts);margin-bottom:8px">每行一个单词，支持 <code>word 释义</code> 格式，词库匹配优先，未匹配则使用自定义释义</p>
       <textarea class="inp" id="importInput" placeholder="abandon&#10;brilliant&#10;curious&#10;demonstrate&#10;..."></textarea>
       <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
         <button class="btn btn-p btn-sm" onclick="previewImport()">🔍 预览匹配</button>
@@ -507,31 +507,53 @@ function renderImport(){
 	  return null;
 	}
 	
+function parseImportLines(raw){
+  const seen=new Set();
+  const items=[];
+  raw.split(/[\r\n]+/).forEach(line=>{
+    const trimmed=line.trim();
+    if(!trimmed)return;
+    const m=trimmed.match(/^(\S+)\s*(.*)$/);
+    const word=m[1];
+    const meaning=m[2].trim();
+    const key=word.toLowerCase();
+    if(seen.has(key))return;
+    seen.add(key);
+    items.push({word,meaning});
+  });
+  return items;
+}
+
 function previewImport(){
   const raw=document.getElementById('importInput').value.trim();
   if(!raw){toast('⚠️ 请粘贴单词列表');return}
-  const list=[...new Set(raw.split(/[\n,;，；]+/).map(s=>s.trim()).filter(Boolean))];
+  const items=parseImportLines(raw);
   const preview=document.getElementById('importPreview');
-  let found=0,notfound=0;
-  preview.innerHTML=list.map(en=>{
-    const match=lookupDict(en);
-    if(match){found++;return `<div class="import-row"><span class="found">✓</span> <b>${en}</b> → ${match.zh} ${match.pos||''}</div>`}
-    else{notfound++;return `<div class="import-row"><span class="notfound">!</span> <b>${en}</b> → <span style="color:var(--ts)">未匹配，将添加空释义</span></div>`}
+  let found=0,usedCustom=0,empty=0;
+  preview.innerHTML=items.map(it=>{
+    const match=lookupDict(it.word);
+    if(match){found++;return `<div class="import-row"><span class="found">✓</span> <b>${it.word}</b> → ${match.zh} ${match.pos||''}</div>`}
+    else if(it.meaning){usedCustom++;return `<div class="import-row"><span style="color:#f59e0b">●</span> <b>${it.word}</b> → <span style="color:var(--s)">${it.meaning}</span> <span style="font-size:.65rem;color:var(--ts)">自定义</span></div>`}
+    else{empty++;return `<div class="import-row"><span class="notfound">!</span> <b>${it.word}</b> → <span style="color:var(--ts)">未匹配，无释义</span></div>`}
   }).join('');
-  preview.innerHTML+=`<div style="margin-top:8px;font-weight:600;font-size:.85rem">匹配 <span style="color:var(--s)">${found}</span> 词，<span style="color:var(--w)">${notfound}</span> 词需手动补充</div>`;
-  preview.innerHTML+=`<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="doImport()">✅ 确认导入 (${list.length} 词)</button>`;
+  let info=[];
+  if(found>0)info.push(`<span style="color:var(--s)">✓ ${found}</span> 词库匹配`);
+  if(usedCustom>0)info.push(`<span style="color:#f59e0b">● ${usedCustom}</span> 自定义释义`);
+  if(empty>0)info.push(`<span style="color:var(--w)">! ${empty}</span> 无释义`);
+  preview.innerHTML+=`<div style="margin-top:8px;font-weight:600;font-size:.85rem">${info.join('，')}</div>`;
+  preview.innerHTML+=`<button class="btn btn-p btn-sm" style="margin-top:8px" onclick="doImport()">✅ 确认导入 (${items.length} 词)</button>`;
 }
 
 function doImport(){
   const raw=document.getElementById('importInput').value.trim();
-  const list=[...new Set(raw.split(/[\n,;，；]+/).map(s=>s.trim()).filter(Boolean))];
-  if(list.length===0)return;
+  const items=parseImportLines(raw);
+  if(items.length===0)return;
   let added=0,skipped=0;
-  list.forEach(en=>{
-    if(W.find(w=>w.en.toLowerCase()===en.toLowerCase())){skipped++;return}
-    const match=lookupDict(en);
+  items.forEach(it=>{
+    if(W.find(w=>w.en.toLowerCase()===it.word.toLowerCase())){skipped++;return}
+    const match=lookupDict(it.word);
     W.push({
-      en:en,zh:match?match.zh:'',pos:match?match.pos||'':'',
+      en:it.word,zh:match?match.zh:(it.meaning||''),pos:match?match.pos||'':'',
       phonetic:match?match.p||'':'',ex:match?match.ex||'':'',
       stage:0,nextReview:null,reviewHistory:[],source:'import'
     });
