@@ -2,3 +2,4 @@
 words.json
 *.py
 __pycache__/
+*.jpg
